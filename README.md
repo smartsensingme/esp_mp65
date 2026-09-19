@@ -36,7 +36,7 @@ consuming component's `main/idf_component.yml`:
 dependencies:
   esp_mp65:
     git: https://github.com/smartsensingme/esp_mp65.git
-    version: "0.1.0"
+    version: "v0.1.0"
 ```
 
 The component's own `idf_component.yml` describes its ESP-IDF relationship;
