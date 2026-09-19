@@ -1,0 +1,21 @@
+       ESP32-S3 Super Mini                    MPU-6500
+       ──────────────────                    ────────
+
+       GPIO13  ────────────────────────────  SCL/SCLK
+                 SPI SCLK
+
+       GPIO12  ────────────────────────────  SDA/SDI
+                 SPI MOSI
+
+       GPIO11  ────────────────────────────  AD0/SDO
+                 SPI MISO
+
+       GPIO10  ────────────────────────────  NCS
+                 SPI CS
+
+       GPIO4   ────────────────────────────  INT
+                 data-ready interrupt (optional)
+
+       3V3     ────────────────────────────  VCC
+
+       GND     ────────────────────────────  GND

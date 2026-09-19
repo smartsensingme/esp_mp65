@@ -1,0 +1,155 @@
+menu "ESP MP65 (MPU-6500)"
+
+    choice ESP_MP65_SPI_HOST
+        prompt "SPI host"
+        default ESP_MP65_SPI_HOST_2
+        help
+            Select the general-purpose SPI controller used by instances created
+            with ESP_MP65_CONFIG_DEFAULT(). Confirm the host is not reserved by
+            flash/PSRAM or another component. Bus creation and exclusive bus
+            reservation remain independent per-instance runtime choices.
+
+        config ESP_MP65_SPI_HOST_2
+            bool "SPI2"
+
+        config ESP_MP65_SPI_HOST_3
+            bool "SPI3"
+    endchoice
+
+    config ESP_MP65_PIN_SCLK
+        int "SCLK GPIO"
+        range 0 48
+        default 13
+        help
+            SPI clock pin used when the instance initializes its host. GPIO13
+            matches docs/pins.txt. An application-owned existing host retains
+            the pins chosen when that host was initialized.
+
+    config ESP_MP65_PIN_MOSI
+        int "MOSI GPIO"
+        range 0 48
+        default 12
+        help
+            SPI controller output connected to SDA/SDI when this component
+            initializes the host. GPIO12 matches docs/pins.txt.
+
+    config ESP_MP65_PIN_MISO
+        int "MISO GPIO"
+        range 0 48
+        default 11
+        help
+            SPI controller input connected to AD0/SDO when this component
+            initializes the host. GPIO11 matches docs/pins.txt.
+
+    config ESP_MP65_PIN_CS
+        int "Chip-select GPIO"
+        range 0 48
+        default 10
+        help
+            Active-low chip-select connected to NCS. GPIO10 matches
+            docs/pins.txt. Each device on a shared host needs a distinct CS.
+
+    config ESP_MP65_PIN_INT
+        int "Data-ready INT GPIO default"
+        range 0 48
+        default 4
+        help
+            Default host GPIO connected to the MPU-6500 INT data-ready output.
+            GPIO4 matches docs/pins.txt. This value is only a wiring default:
+            esp_mp65_data_ready_start() still receives the GPIO per instance,
+            so an application may override it, use multiple sensors, or omit
+            managed INT entirely. The component validates that the selected
+            GPIO is valid and does not conflict with the instance SPI pins.
+
+    config ESP_MP65_SPI_CLOCK_HZ
+        int "SPI clock frequency (Hz)"
+        range 100000 1000000
+        default 1000000
+        help
+            Clock used for both register writes and burst reads. It is limited
+            to 1 MHz so configuration writes remain within the MPU-6500 SPI
+            specification. Lower values increase transaction time and can ease
+            signal-integrity diagnosis; they do not change the sensor rate.
+
+    config ESP_MP65_THREAD_SAFE
+        bool "Protect each sensor handle with a mutex"
+        default y
+        help
+            Enable this when more than one task can use the same sensor handle.
+            Disable it to remove mutex latency and code when a single task owns
+            the handle. Separate handles have separate mutexes. The application
+            must always serialize init/deinit and managed-INT start/stop with
+            every operation. Join waiters before stopping; a queue wait is not
+            protected against deletion by this mutex. This option
+            does not reserve the SPI bus from other devices.
+
+    config ESP_MP65_LOCK_TIMEOUT_MS
+        int "Mutex timeout (ms)"
+        depends on ESP_MP65_THREAD_SAFE
+        range 1 60000
+        default 1000
+        help
+            Maximum time an API call waits for another task using the same
+            sensor handle. A timeout is returned as ESP_ERR_TIMEOUT. This is
+            not a timeout for the SPI transaction or exclusive bus acquisition.
+            Conversion to whole RTOS ticks truncates; sub-tick values can become
+            a nonblocking lock attempt.
+
+    choice ESP_MP65_ACCEL_RANGE
+        prompt "Default accelerometer range"
+        default ESP_MP65_ACCEL_RANGE_2G
+        help
+            Select the full scale and raw-to-SI conversion used by the default
+            configuration. Smaller ranges provide finer resolution; larger
+            ranges avoid saturation under higher acceleration.
+
+        config ESP_MP65_ACCEL_RANGE_2G
+            bool "+/- 2 g"
+        config ESP_MP65_ACCEL_RANGE_4G
+            bool "+/- 4 g"
+        config ESP_MP65_ACCEL_RANGE_8G
+            bool "+/- 8 g"
+        config ESP_MP65_ACCEL_RANGE_16G
+            bool "+/- 16 g"
+    endchoice
+
+    choice ESP_MP65_GYRO_RANGE
+        prompt "Default gyroscope range"
+        default ESP_MP65_GYRO_RANGE_250DPS
+        help
+            Select the full scale and raw-to-SI conversion used by the default
+            configuration. Smaller ranges provide finer resolution; larger
+            ranges avoid saturation at higher angular velocity.
+
+        config ESP_MP65_GYRO_RANGE_250DPS
+            bool "+/- 250 degrees/s"
+        config ESP_MP65_GYRO_RANGE_500DPS
+            bool "+/- 500 degrees/s"
+        config ESP_MP65_GYRO_RANGE_1000DPS
+            bool "+/- 1000 degrees/s"
+        config ESP_MP65_GYRO_RANGE_2000DPS
+            bool "+/- 2000 degrees/s"
+    endchoice
+
+    config ESP_MP65_DLPF_CFG
+        int "Digital low-pass filter setting"
+        range 0 7
+        default 3
+        help
+            Value written to CONFIG.DLPF_CFG and ACCEL_CONFIG2.A_DLPF_CFG.
+            The default (3) gives approximately 41 Hz gyro bandwidth and
+            44.8 Hz accelerometer bandwidth. See the MPU-6500 register map for
+            every setting's bandwidth and output-rate implications. Filtering
+            trades noise attenuation against phase delay and response speed.
+
+    config ESP_MP65_SAMPLE_RATE_DIV
+        int "Sample-rate divider"
+        range 0 255
+        default 0
+        help
+            Value written to SMPLRT_DIV. With the default DLPF setting the
+            internal gyro rate is 1 kHz, so output rate is 1000/(1+value) Hz.
+            This does not pace esp_mp65_read(); the application chooses when to
+            read and can receive repeated samples if it polls too quickly.
+
+endmenu

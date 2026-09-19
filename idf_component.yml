@@ -1,0 +1,15 @@
+version: "0.1.0"
+description: "ESP-IDF SPI driver for the MPU-6500 six-axis IMU"
+url: "https://github.com/smartsensingme/esp_mp65"
+repository: "https://github.com/smartsensingme/esp_mp65.git"
+documentation: "https://github.com/smartsensingme/esp_mp65/blob/main/README.md"
+issues: "https://github.com/smartsensingme/esp_mp65/issues"
+license: "MIT"
+idf: ">=6.0"
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3
+  - esp32c6
+dependencies: {}
